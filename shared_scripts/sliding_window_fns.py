@@ -7,8 +7,6 @@ import sys
 import os
 import numpy.linalg as la
 from scipy.spatial.distance import squareform
-shared_scripts_path = os.path.expanduser('~/projects/dynamic_networks/shared_scripts/')
-sys.path.append(shared_scripts_path)
 import persistence_fns as pf
 
 
