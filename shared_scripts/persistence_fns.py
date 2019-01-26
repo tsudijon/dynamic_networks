@@ -67,7 +67,7 @@ def get_bottleneck_dist_matrix(barcodes):
         bi = bi[np.isfinite(bi[:, 1]), :]
         for j in range(i + 1, nBarcodes):
             bj = np.array(barcodes[j])
-            bj = bj[np.isfinit(bj[:, 1]), :]
+            bj = bj[np.isfinite(bj[:, 1]), :]
             bottle_dist = get_bottleneck_dist(bi, bj)
             dist_matrix.append(bottle_dist)
     return squareform(dist_matrix)
