@@ -32,19 +32,34 @@ def exp_decay(x):
     return np.exp(-x)
 
 
-# pass node weights and edge weights thru the phi function
 def weight_fn(node_wts, edge_wts, lamda, phi='softplus'):
+    """
+    pass node weights and edge weights thru the phi function
+    Parameters
+    ----------
+    node_wts: list of (ndarray(N))
+        A list of node weights
+    edge_wts: list of (scipy.sparse(N, N))
+        A sparse matrix of edge weights
+    lamda: float
+        Weighting parameter between edge weights and node weights
+    """
     if phi == 'softplus':
         phi_fn = lambda x: softplus(x)
     elif phi == 'relu':
         phi_fn = lambda x: relu(x)
     else:  # custom phi fn
         phi_fn = phi
-
     assert len(node_wts) == len(edge_wts), 'Unequal number of edge wts and node wts'
 
-    phi_node_wts = np.array(list(map(phi_fn, lamda * node_wts)))
-    phi_edge_wts = np.array(list(map(phi_fn, edge_wts)))
+    phi_node_wts = list(map(phi_fn, lamda * node_wts))
+    phi_edge_wts = []
+    for ew in edge_wts:
+        ew = ew.tocoo()
+        row, col, data = ew.row, ew.col, ew.data
+        data = phi_fn(data)
+        ew = sparse.coo_matrix((data, (row, col)), shape=ew.shape)
+        phi_edge_wts.append(ew)
     return phi_node_wts, phi_edge_wts
 
 

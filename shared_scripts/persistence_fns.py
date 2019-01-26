@@ -7,6 +7,7 @@ import sys
 import numpy as np
 import gudhi as g
 from scipy.spatial.distance import squareform
+from scipy import sparse
 from ripser import ripser, plot_dgms
 
 # get the maximum persistence object given a PD, in array form: an array of list of length 2.
@@ -25,16 +26,24 @@ def get_maximum_persistence(PD):
 
 # turn graph into a valid filtration; max of lamda * node weights and edge weights
 def get_filtration(node_wts, edge_wts):
-    ''' Turn graph into a valid filtration; each off diagonal entry of the adjacency matrix is the
-    maximum of edge weights and node weights'''
-    adjacency_matrix = squareform(edge_wts)
-    np.fill_diagonal(adjacency_matrix, node_wts)
-    filtration_matrix = np.zeros_like(adjacency_matrix)
-
-    for i in range(len(adjacency_matrix)):
-        for j in range(len(adjacency_matrix)):
-            filtration_matrix[i, j] = np.max((adjacency_matrix[i, i], adjacency_matrix[j, j],
-                                             adjacency_matrix[i, j]))
+    """
+    Turn graph into a valid filtration; each off diagonal entry of the adjacency matrix is the
+    maximum of edge weights and node weights
+    Parameters
+    ----------
+    node_wts: ndarray(N)
+        A list of node weights
+    edge_wts: scipy.sparse(N, N)
+        A sparse matrix of edge weights
+    """
+    assert node_wts.size == edge_wts.shape[0], 'Unequal number of edge wts and node wts'
+    N = len(node_wts)
+    ew = edge_wts.tocoo()
+    row, col, data = ew.row, ew.col, np.array(ew.data)
+    data = np.maximum(data, node_wts[row])
+    data = np.maximum(data, node_wts[col])
+    filtration_matrix = sparse.coo_matrix((data, (row, col)), shape=(N, N))
+    filtration_matrix += sparse.spdiags(node_wts, 0, N, N)
     return filtration_matrix
 
 
@@ -54,7 +63,11 @@ def get_bottleneck_dist_matrix(barcodes):
     nBarcodes = len(barcodes)
     dist_matrix = []
     for i in range(nBarcodes):
+        bi = np.array(barcodes[i])
+        bi = bi[np.isfinite(bi[:, 1]), :]
         for j in range(i + 1, nBarcodes):
-            bottle_dist = get_bottleneck_dist(barcodes[i], barcodes[j])
+            bj = np.array(barcodes[j])
+            bj = bj[np.isfinit(bj[:, 1]), :]
+            bottle_dist = get_bottleneck_dist(bi, bj)
             dist_matrix.append(bottle_dist)
     return squareform(dist_matrix)
