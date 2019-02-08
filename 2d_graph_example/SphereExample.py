@@ -14,6 +14,7 @@ import persistence_fns as pf
 import sliding_window_fns as sw
 from ripser import ripser, plot_dgms
 from sklearn import manifold
+import scipy.io as sio
 
 
 
@@ -354,11 +355,15 @@ def vary_parameters(change_param = 5, lamda=1, phi=linear_phi_fn):
     mpers_results = np.zeros((len(tau_test_values),len(dim_test_values)))
     top_diff_results = np.zeros((len(tau_test_values),len(dim_test_values)))
 
+    ret = {}
     for tau in tau_test_values:
         for d in dim_test_values:
             print(tau,d)
             
             PDs = apply_pipeline(node_wts,edge_wts, d = d, tau = tau, lamda=lamda, phi=phi) # get the PDs
+            ret['%i_%i_0'%(tau, d)] = PDs[0]
+            ret['%i_%i_1'%(tau, d)] = PDs[1]
+            sio.savemat("Results.mat", ret)
             res = (get_maximum_persistence(PDs)[1],get_top_diff_persistence(PDs)[1], get_num_features(PDs)[1])
             print(res)
             
