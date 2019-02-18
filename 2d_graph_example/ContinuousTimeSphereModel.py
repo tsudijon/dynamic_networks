@@ -52,6 +52,7 @@ def get_sensor_lifetimes(time, birth_rate, death_rate):
 
 	return intervals
 
+
 def sample_dynamic_network(intervals, obs_times, obsfn, edge_wtsfn):
 	"""
 	Can query the interval tree below for more information about the points
@@ -72,17 +73,25 @@ def sample_dynamic_network(intervals, obs_times, obsfn, edge_wtsfn):
 
 	### query tree at each timestep ###
 	coordinate_set = []
+	node_wts = []
+	edge_wts = []
 	for t in obs_times:
 		points = intervals.at(t)
 		coordinates = [ p[2] for p in list(points) ]
 
 		coordinate_set.append(coordinates)
 
-		hull = sp.ConvexHull(coordinates)
+		hull = sp.ConvexHull(np.array(coordinates))
 		node_wts.append(sphere.get_node_wts(t,hull,obsfn))
 		edge_wts.append(edge_wtsfn(hull))
 
 	return (node_wts,edge_wts,coordinate_set)
 
+## Functions for visualization 
 
+def visualize_dynamic_network():
+	"""
+	Creates a termporary folder, then creates a movie of the results
+	"""
+	pass
 
