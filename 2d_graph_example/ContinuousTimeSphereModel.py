@@ -5,11 +5,12 @@ import SphereExample as sphere
 
 def get_sensor_lifetimes(time, birth_rate, death_rate):
 	"""
-	A shoddy implementation of a queueing model.
-	'births' serves as the queue.
+	Simulates sensors lifetimes on the sphere.
+
 	See the ContinuousTimeSphereExample notebook for
 	details on implementation.
 
+	
 	Parameters
 	-------------------------------------
 	time: float
@@ -19,6 +20,9 @@ def get_sensor_lifetimes(time, birth_rate, death_rate):
 		in a unit time interval)
 	death_rate: float > 0
 		death rate
+	Output: intervaltree
+		an interval tree; each node of the tree is 
+		(birth,death,coordinate) of a point.
 	"""
 
 	l1 = 1/birth_rate
@@ -55,7 +59,8 @@ def get_sensor_lifetimes(time, birth_rate, death_rate):
 
 def sample_dynamic_network(intervals, obs_times, obsfn, edge_wtsfn):
 	"""
-	Can query the interval tree below for more information about the points
+	Given set of observations, creates the dynamic network at those times
+	given the birth/death times of the sensors. 
 
 	Parameters
 	----------------------------
@@ -68,6 +73,9 @@ def sample_dynamic_network(intervals, obs_times, obsfn, edge_wtsfn):
 		function from which to sample
 	edge_wtsfn:
 		function applied to edge wts
+	Output: tuple
+		(node_wts,edge_wts,all_points)
+		node_wts: list of node wts at each time index
 	"""
 
 
