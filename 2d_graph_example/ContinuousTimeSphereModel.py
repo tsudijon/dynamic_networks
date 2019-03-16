@@ -103,3 +103,63 @@ def visualize_dynamic_network():
 	"""
 	pass
 
+
+def vary_birth_death_params(T, wl, bd_rate_vals, dim_vals):
+	"""
+
+	Output: array
+		array of the max pers values, indexed by the birth death rate and the dimension
+	Params
+	------------
+	T: int
+		period of the observation function
+	wl: float
+		window length for the delay embedding
+	bd_rate_vals: list of positive float:
+		params for the birth death rates
+	dim_vals: list of loat
+		params for dims
+
+	"""
+
+	#Pick the window length to be half the period
+	if wl is None:
+		wl = T/2
+
+	obsfn = lambda t, p: sphere.periodic_northsouth_modulated(t,p,T)
+	edge_wtsfn = lambda hull_obj: sphere.get_edge_wts(hull_obj, alpha = 1.0) 
+
+
+	## Vary Birth/Death rate of the sensors, and dimension
+	bd_rate_test_values = bd_rate_vals
+	dim_test_values = dim_vals
+
+	mpers_results = np.zeros((len(bd_rate_test_values),len(dim_test_values)))
+	top_diff_results = np.zeros((len(bd_rate_test_values),len(dim_test_values)))
+
+	for i,bd_rate in enumerate(bd_rate_test_values):
+		for j,d in enumerate(dim_test_values):
+			print(bd_rate,d)
+			
+			# resample sensor lifetimes with different birth/death rates
+			sensor_lifetimes = get_sensor_lifetimes(5*T, bd_rate, bd_rate) # this first param should be independent of analysis
+
+			# resample dynamic network 
+			tau = wl/d
+			ts = np.arange(0,2*T,tau) 
+
+			(node_wts, edge_wts, allpoints) = sample_dynamic_network(sensor_lifetimes, ts, obsfn = obsfn,
+			                            edge_wtsfn = edge_wtsfn)
+
+			PDs = sphere.apply_pipeline(node_wts,edge_wts, d = d, tau = 1, lamda=1, phi=sphere.linear_phi_fn) # get the PDs
+			res = (sphere.get_maximum_persistence(PDs)[1], \
+					sphere.get_top_diff_persistence(PDs)[1], \
+					sphere.get_num_features(PDs)[1])
+			print(res)
+
+			mpers_results[i,j] = res[0]
+			top_diff_results[i,j] = res[1]
+
+	return mpers_results
+
+

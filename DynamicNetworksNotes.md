@@ -53,7 +53,19 @@ How is the choice of homological dimension, sliding window length, and delay mad
 
 Nonlinear dynamics, delay times, and embedding windows - this paper in particular chooses the delay time $\tau.$ Many other papers for choosing the delay coordinates, mainly in Physics papers. See Vin de Silva's paper for more references.
 
+How to choose the proper dimension $d$? The method `false nearest neighbors` can help with this, given in [Kennel et al.](https://journals.aps.org/pra/pdf/10.1103/PhysRevA.45.3403), [Review of FNN](https://www.sciencedirect.com/science/article/pii/S0098135497876570/pdf?md5=53b2460bde34be51ae9d7287c1f81b2e&pid=1-s2.0-S0098135497876570-main.pdf). The idea is that if the delay embedding is smaller than the needed one, the topology is not faithfully reconstructed and so there will be neighbors that are in incorrect places.
 
+- Consider the vectors $\phi_l(k) = (y(k-\tau),\dots,y(k - l\tau)).$
+- Given $\phi_l(k)$ find $\phi_l(j)$ such that the distance between these two, Euclidean wise, is minimized.
+- Check that \\[ \frac{d(y(k),y(j))}{||\phi_l(k),\phi_l(j) ||_2} \leq R\\] for som threshold $R$ if so, the neighbor is labeled a *false neighbor.*
+- Continue for all $k,$ and calculate the number of points with false neighbors.
+- Continue raising $l$ until the number of points with false neighbors is small.
 
+# Papers
+## (Quasi)Periodicity Quantification in Video Data, using Topology
+
+Taken's Embedding theorem: there exists an integer $D,$ so that for all $d \geq D$ and generic $\tau > 0$ the sliding window embedding $SW_{d,\tau}X$ reconstructs the state space of the underlying dynamics witnessed by the signal $X.$ To find the such a minimal $D$: use *false nearest neighbors scheme* - keep track of the $k$th nearest neighbors of each point in the delat embedding, and if they change as $d$ is increased, then $d$ is too low. 
+
+What about picking the delay $\tau?$ The Sliding window embedding of periodic signals is roundest (so that periodicity score is mazimized) when the window length $d\tau$ satisfies $$ d\tau = \frac{\pi k}{L}\left( \frac{d}{d+1} \right)$$ where $L$ is the number of periods the signal has in $[0,2\pi]$ and $k \in \mathbb{N}.$ **This seems to coincide with our dynamic networks analysis.**
 
 
