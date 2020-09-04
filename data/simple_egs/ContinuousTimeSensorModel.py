@@ -2,13 +2,17 @@ import numpy as np
 import intervaltree as it
 import scipy.spatial as sp
 import SphereExample as sphere
+import PlaneExample as plane
 import networkx as nx
+import multiprocessing as mp
+from joblib import Parallel, delayed
+from data.helper import timing
 
-def get_sensor_lifetimes(time, birth_rate, death_rate):
+def get_sensor_lifetimes(initial_points,time, birth_rate, death_rate, manifold = 'sphere'):
 	"""
-	Simulates sensors lifetimes on the sphere.
+	Simulates sensors lifetimes on a given space.
 
-	See the ContinuousTimeSphereExample notebook for
+	See the ContinuousTimeSphereExample, or the ContinuousTimPlaneExample notebook for
 	details on implementation.
 
 	
@@ -21,6 +25,8 @@ def get_sensor_lifetimes(time, birth_rate, death_rate):
 		in a unit time interval)
 	death_rate: float > 0
 		death rate
+	manifold: String
+		pass "sphere" or "plane"; generates random uniform samples from one of these spaces
 	Output: intervaltree
 		an interval tree; each node of the tree is 
 		(birth,death,coordinate) of a point.
@@ -29,10 +35,18 @@ def get_sensor_lifetimes(time, birth_rate, death_rate):
 	l1 = 1/birth_rate
 	l2 = 1/death_rate
 
-	births = [0]*100 #initialize 100 points
+	births = [0]*initial_points #initialize 100 points
 	
 	current_time = 0
 	intervals = it.IntervalTree()
+
+	def sample_point():
+		if manifold == 'sphere':
+			return sphere.sample_uniform_sphere(1).tolist()[0]
+		elif manifold == 'plane':
+			return plane.sample_uniform(1).tolist()[0]
+		else:
+			raise Exception("spaces supported include 'sphere', 'plane' ")
 
 	while current_time < time:
 
@@ -48,17 +62,16 @@ def get_sensor_lifetimes(time, birth_rate, death_rate):
 		if np.random.rand() < l1/(l1 + l2):
 			births.append(current_time)
 		else:
-			intervals[births.pop(0):current_time] = \
-						sphere.sample_uniform_sphere(1).tolist()[0]
+			intervals[births.pop(0):current_time] = sample_point()
 
 	#add the remaining nodes:
 	for i in range(len(births[:-1])):
-		intervals[births[i]:time] = sphere.sample_uniform_sphere(1).tolist()[0]
+		intervals[births[i]:time] = sample_point()
 
 	return intervals
 
 
-def sample_dynamic_network(intervals, obs_times, obsfn, edge_wtsfn):
+def sample_dynamic_network(intervals, obs_times, obsfn, edge_wtsfn, manifold = 'sphere'):
 	"""
 	Given set of observations, creates the dynamic network at those times
 	given the birth/death times of the sensors. 
@@ -90,16 +103,26 @@ def sample_dynamic_network(intervals, obs_times, obsfn, edge_wtsfn):
 
 		coordinate_set.append(coordinates)
 
-		hull = sp.ConvexHull(np.array(coordinates))
-		node_wts.append(sphere.get_node_wts(t,hull,obsfn))
-		edge_wts.append(edge_wtsfn(hull))
+		if manifold == 'sphere':
+			hull = sp.ConvexHull(np.array(coordinates))
+			node_wts.append(sphere.get_node_wts(t,hull,obsfn))
+			edge_wts.append(edge_wtsfn(hull))
+
+		elif manifold == 'plane':
+			node_wts.append(plane.get_node_wts(t,np.array(coordinates),obsfn))
+			edge_wts.append(edge_wtsfn(np.array(coordinates)))
+		else:
+			raise Exception("Please pass a handled manifold")
 
 	return (node_wts,edge_wts,coordinate_set)
 
-def sample_dynamic_geometric_graph(intervals, obs_times, obsfn,edge_wtsfn):
+# another idea - can search for closest r' points in Eucclidean space, r' is the appropriate radius such that induced great circle on 
+# the sphere has specified distance
+
+def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, edge_wtsfn, manifold = 'sphere'):
 	"""
 	Given set of observations, creates the dynamic network at those times
-	given the birth/death times of the sensors. Connects points based on some threshold parameter
+	given the birth/death times of the sensors. 
 
 	Parameters
 	----------------------------
@@ -112,31 +135,45 @@ def sample_dynamic_geometric_graph(intervals, obs_times, obsfn,edge_wtsfn):
 		function from which to sample
 	edge_wtsfn:
 		function applied to edge wts
-	threshold:
-		radius for connectivity for the random geometric graph
 	Output: tuple
 		(node_wts,edge_wts,all_points)
 		node_wts: list of node wts at each time index
 	"""
-
-
 	### query tree at each timestep ###
+	#num_cores = int(0.5*multiprocessing.cpu_count())
+
 	coordinate_set = []
 	node_wts = []
 	edge_wts = []
-	for t in obs_times:
+	# we can maybe parallelize.
+	def parallel_helper(intervals, t, obs_fn, manifold):
 		points = intervals.at(t)
 		coordinates = [ p[2] for p in list(points) ]
+		if manifold == 'sphere':
+			threshold = sphere.critical_rgg_scaling(len(points))
+			node_wt = np.array([obsfn(t,np.array(p)) for p in coordinates])
+			edge_wt = sphere.get_edge_wts_rgg(np.array(coordinates), threshold)
+		elif manifold == 'plane':
+			node_wt = plane.get_node_wts(t,np.array(coordinates),obsfn)
+			edge_wt = plane.get_edge_wts_rgg(np.array(coordinates))
+		else:
+			return
+		return (coordinates, node_wt, edge_wt)
 
-		coordinate_set.append(coordinates)
+	num_cores = mp.cpu_count() - 4
+	results = Parallel(n_jobs = num_cores)(delayed(parallel_helper)(intervals,t,obsfn,manifold) for t in obs_times)
 
-		node_wts.append(np.array([obsfn(t,np.array(cd)) for cd in coordinates]))
-		edge_wts.append(edge_wtsfn(coordinates))
+	#results = [parallel_helper(intervals,t,obsfn,manifold) for t in obs_times]
+
+	coordinate_set = [res[0] for res in results]
+	node_wts = [res[1] for res in results]
+	edge_wts = [res[2] for res in results]
 
 	return (node_wts,edge_wts,coordinate_set)
 
-# another idea - can search for closest r' points in Eucclidean space, r' is the appropriate radius such that induced great circle on 
-# the sphere has specified distance
+
+
+
 
 
 ## Functions for visualization 
@@ -148,7 +185,7 @@ def visualize_dynamic_network():
 	pass
 
 
-def vary_birth_death_params(T, wl, bd_rate_vals, dim_vals):
+def vary_birth_death_params(T, wl, bd_rate_vals, dim_vals, manifold = 'sphere'):
 	"""
 
 	Output: array
@@ -186,7 +223,7 @@ def vary_birth_death_params(T, wl, bd_rate_vals, dim_vals):
 			print(bd_rate,d)
 			
 			# resample sensor lifetimes with different birth/death rates
-			sensor_lifetimes = get_sensor_lifetimes(5*T, bd_rate, bd_rate) # this first param should be independent of analysis
+			sensor_lifetimes = get_sensor_lifetimes(5*T, bd_rate, bd_rate, manifold) # this first param should be independent of analysis
 
 			# resample dynamic network 
 			tau = wl/d

@@ -19,6 +19,10 @@ import scipy.io as sio
 import itertools as itr
 
 
+from data.helper import timing
+from sklearn.metrics.pairwise import haversine_distances
+
+
 
 
 """###########################################
@@ -33,13 +37,16 @@ def sample_uniform_sphere(N):
 
 # cds should be an array of size (3,)
 def cartesian_to_spherical(cds):
-    (x,y,z) = cds
-    rho = np.sqrt(np.sum(cds**2))
+    #import pdb; pdb.set_trace()
+    cds = cds.reshape((-1,3))
+    x = cds[:,0]
+    y = cds[:,1]
+    rho = np.sqrt(np.sum(cds**2, axis =1))
     r = np.sqrt(x**2 + y**2)
     theta = np.arccos(x/r)
     phi = np.arcsin(r/rho)
     
-    return (rho,phi,theta)
+    return np.column_stack((rho,phi,theta))
 
 def cartesian_to_sphere_distance(cds1,cds2):
     (rho,lat1,lon1) = cartesian_to_spherical(cds1)
@@ -52,9 +59,6 @@ def cartesian_to_sphere_distance(cds1,cds2):
     c = np.arcsin(a)
     
     return 2*rho*c
-
-
-
 
 """###########################################
 Observation functions on the sphere and
@@ -73,7 +77,8 @@ def periodic_northsouth_modulated(t,cds, T):
     T: float
         Period of a cycle
     """
-    rho, phi, theta = cartesian_to_spherical(cds)
+    coords = cartesian_to_spherical(cds)
+    phi = coords[0,1]
     return 3 + 2*np.cos(2*np.pi*t/T + 2*phi)
 
 def sph_harm_modulated(t,cds, T, m, n):
@@ -106,14 +111,10 @@ def linear_phi_fn(x):
 def identity_phi_fn(x):
     return x
 
-
-
-
 """###########################################
 Functions for accessing and maintaining aspects
 of the graph
 ###########################################"""
-
 
 def simplex_list_to_adjacency_graph(simplex_list):
     pass
@@ -173,21 +174,44 @@ def get_edge_wts_rgg(points, threshold, alpha = 1.0):
         A sparse matrix with the edge weights
 
     """
-    v = np.array(points)
-    edges = itr.product(range(len(v)),range(len(v)))
-    ds = [(cartesian_to_sphere_distance(v[e[0],:], v[e[1],:]),e) for e in edges]
-
-    ## pick out edges less than threshold r
-    edges = [e for d,e in ds if (d < threshold)]
-    ds = [d for d,e in ds if (d < threshold)]
-    ds = alpha*np.array(ds + ds)
+    # need to make this faster? sklearn havesines, first changing to spherical
+    # v = np.array(points)
+    # edges = itr.product(range(len(v)),range(len(v)))
+    # ds = [(cartesian_to_sphere_distance(v[e[0],:], v[e[1],:]),e) for e in edges]
     
-    e0 = np.array([e[0] for e in edges] + [e[1] for e in edges])
-    e1 = np.array([e[1] for e in edges] + [e[0] for e in edges])
+    v = cartesian_to_spherical(np.array(points))[:,1:]
+    ds = haversine_distances(v,v)
+
+    # ## pick out edges less than threshold r
+    edges = [0]*len(points)**2
+    dists = [0]*len(points)**2
+    i = 0
+    for index, d in np.ndenumerate(ds):
+        if d < threshold:
+            edges[i] = index
+            dists[i] = d
+            i += 1
+    #delete 
+    first_idx = edges.index(0)
+    edges = edges[:first_idx]
+    dists = dists[:first_idx]
     
-    return sparse.coo_matrix((ds, (e0, e1)), shape=(len(v), len(v)))
+    #import pdb; pdb.set_trace() 
+    #edges = [e for d,e in ds if (d < threshold)]
+    #ds = [d for d,e in ds if (d < threshold)]
+    #ds = alpha*np.array(ds + ds)
+
+    #e0 = np.array([e[0] for e in edges] + [e[1] for e in edges])
+    #e1 = np.array([e[1] for e in edges] + [e[0] for e in edges])
+    e0 = np.array([e[0] for e in edges])
+    e1 = np.array([e[1] for e in edges])
+    #import pdb; pdb.set_trace()
 
 
+    # unpack only the ones whose distance is greater than the threshold.
+    return sparse.coo_matrix((dists, (e0, e1)), shape=(len(v), len(v)))
+
+    #return sparse.coo_matrix(ds)
 
 """###########################################
 Functions for creating a dynamic network and computing
@@ -196,7 +220,7 @@ sliding window bottleneck persistence on it
 
 def create_dynamic_network(time_indices, obsfn, edge_wtsfn, change_param = 3, seed = 0):
     """
-    Create a sphere network where points are deleted and added at each step
+    Create a discrete sphere network where points are deleted and added at each step
     Parameters
     ----------
     time_indices: ndarray(M)
@@ -214,7 +238,7 @@ def create_dynamic_network(time_indices, obsfn, edge_wtsfn, change_param = 3, se
     edge_wts = []
     
     # generate random set of points initially
-    points = sample_uniform_sphere(100)
+    points = sample_uniform_sphere(500)
     allpoints = []
     
     # create networks for each time step
@@ -226,7 +250,9 @@ def create_dynamic_network(time_indices, obsfn, edge_wtsfn, change_param = 3, se
         num_ins = np.random.randint(change_param+1)
         total_removed += num_del
         points = update_points(points, num_del, num_ins)
-        
+
+
+        # construct edges via convex hulls.
         hull = sp.ConvexHull(points)
         node_wts.append(get_node_wts(t,hull, obsfn))
         edge_wts.append(edge_wtsfn(hull))
@@ -243,11 +269,10 @@ def update_points(pt_list,num_del,num_ins):
     # all initial points get removed
     return np.concatenate((pt_list[num_del::, :] , new_points), 0)
 
-
 def apply_pipeline(node_wts, edge_wts, d, tau, lamda = 1, phi=identity_phi_fn):
     
     # apply phi functions, and scale the weights
-    phi_node_wts, phi_edge_wts = gf.weight_fn(node_wts, edge_wts, lamda=lamda, phi=phi)
+    #phi_node_wts, phi_edge_wts = gf.weight_fn(node_wts, edge_wts, lamda=lamda, phi=phi)
 
     # constrcut the filtrations / simplicial complexes according to our construction
     filtration_matrix = list(map(lambda n, e: pf.get_filtration(n, e), phi_node_wts, phi_edge_wts))
@@ -266,6 +291,24 @@ def apply_pipeline(node_wts, edge_wts, d, tau, lamda = 1, phi=identity_phi_fn):
     
     return PDs
 
+def critical_rgg_scaling(n):
+    """
+    Critical scaling given in the theory, pay special attention to coefs
+    """
+    k = 2 # dimension
+    r = 1.0
+    volume = 4.0*np.pi*r**2 # volume of manifold (sphere surface area)
+    tau = 0.1 # condition number assumption
+    C = 1.0 # can be whatever
+    C_1 = (4**k)*volume/((4.0*np.pi)/3.0)
+    C_2 = C_1*(C**(-k))*np.exp(k*C/(8*tau))
+
+    alpha = 1.0/C_2
+    return C*(np.abs(np.log(alpha*n)/(alpha*n)))**0.5
+
+"""###########################################
+Functions for analyzing persistence diagrams
+###########################################"""
 
 def get_maximum_persistence(PD):
     num_dim = len(PD)
@@ -297,12 +340,6 @@ def get_top_diff_persistence(PD):
         
 def get_num_features(PD):
     return(list(map(len,PD)))
-
-
-
-
-
-
 
 """###########################################
 Test cases
@@ -369,7 +406,6 @@ def do_example_sphere_filtration(change_param = 5, do_animation = False):
     plt.figure()
     plot_dgms(PDs, show=False)
     plt.show()
-
 
 def vary_parameters(change_param = 5, lamda=1, phi=linear_phi_fn):
     points = sample_uniform_sphere(100)
