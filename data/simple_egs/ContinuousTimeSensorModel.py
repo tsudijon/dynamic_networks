@@ -119,7 +119,7 @@ def sample_dynamic_network(intervals, obs_times, obsfn, edge_wtsfn, manifold = '
 # another idea - can search for closest r' points in Eucclidean space, r' is the appropriate radius such that induced great circle on 
 # the sphere has specified distance
 
-def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, edge_wtsfn, manifold = 'sphere'):
+def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphere'):
 	"""
 	Given set of observations, creates the dynamic network at those times
 	given the birth/death times of the sensors. 

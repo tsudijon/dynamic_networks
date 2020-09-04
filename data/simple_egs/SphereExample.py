@@ -21,6 +21,8 @@ import itertools as itr
 
 from data.helper import timing
 from sklearn.metrics.pairwise import haversine_distances
+import multiprocessing as mp
+from joblib import Parallel, delayed
 
 
 
@@ -274,10 +276,15 @@ def apply_pipeline(node_wts, edge_wts, d, tau, lamda = 1, phi=identity_phi_fn):
     # apply phi functions, and scale the weights
     #phi_node_wts, phi_edge_wts = gf.weight_fn(node_wts, edge_wts, lamda=lamda, phi=phi)
 
+    
     # constrcut the filtrations / simplicial complexes according to our construction
-    filtration_matrix = list(map(lambda n, e: pf.get_filtration(n, e), phi_node_wts, phi_edge_wts))
+    filtration_matrix = list(map(lambda n, e: pf.get_filtration(n, e), node_wts, edge_wts))
     # summarize these filtrations using H_0 barcodes
-    barcodes = list(map(pf.get_rips_complex, filtration_matrix))
+
+    # can parallelize this
+    #barcodes = list(map(pf.get_rips_complex, filtration_matrix))
+    num_cores = mp.cpu_count() - 4
+    barcodes = Parallel(n_jobs = num_cores)(delayed(pf.get_rips_complex)(filt) for filt in filtration_matrix)
 
     # get bottleneck distance between all the H0 diagrams;
     bn_dist_matrix = pf.get_bottleneck_dist_matrix(barcodes)
