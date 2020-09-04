@@ -80,7 +80,8 @@ def get_rgg_birthtime_matrix(points, epsilon, distance_func = 'Sphere'):
         print("Distance type not supported.")
         return None
 
-    dists = np.where(dists < epsilon, -np.inf, np.inf) #if value is -infinity, then edge will be born at max of vertex birth times.
+    dists = np.where(dists < epsilon, -np.inf, np.inf) 
+    #if value is -infinity, then edge will be born at max of vertex birth times.
 
     return sparse.coo_matrix(dists)
 
@@ -90,7 +91,6 @@ def get_node_wts(t, points, obsfn):
     node_wts = np.apply_along_axis(f, axis=1, arr=points)
     return np.array(node_wts)
 
-# Sphere Funkywunks~~
 # node weights are sampled from a periodic function on the sphere. sin(t + 2*pi*z)?
 def periodic_northsouth_modulated(t,cds, T):
     """

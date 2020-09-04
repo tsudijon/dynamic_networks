@@ -6,7 +6,10 @@ import PlaneExample as plane
 import networkx as nx
 import multiprocessing as mp
 from joblib import Parallel, delayed
-from data.helper import timing
+
+import sys
+sys.path.append('../data/')
+from helper import timing
 
 def get_sensor_lifetimes(initial_points,time, birth_rate, death_rate, manifold = 'sphere'):
 	"""
@@ -153,6 +156,7 @@ def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphe
 			threshold = sphere.critical_rgg_scaling(len(points))
 			node_wt = np.array([obsfn(t,np.array(p)) for p in coordinates])
 			edge_wt = sphere.get_edge_wts_rgg(np.array(coordinates), threshold)
+			 # convert to birthtimes
 		elif manifold == 'plane':
 			node_wt = plane.get_node_wts(t,np.array(coordinates),obsfn)
 			edge_wt = plane.get_edge_wts_rgg(np.array(coordinates))

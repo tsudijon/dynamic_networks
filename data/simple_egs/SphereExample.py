@@ -18,8 +18,8 @@ from sklearn import manifold
 import scipy.io as sio
 import itertools as itr
 
-
-from data.helper import timing
+sys.path.append('../data/')
+from helper import timing
 from sklearn.metrics.pairwise import haversine_distances
 import multiprocessing as mp
 from joblib import Parallel, delayed
@@ -160,7 +160,7 @@ def get_edge_wts(hull_obj, alpha = 1.0):
 
 def get_edge_wts_rgg(points, threshold, alpha = 1.0):
     """
-    map edges to their distances, for the random geometric graph model
+    map edges to their birthtimes, for the random geometric graph model
     use this to create a dynamic network, edges are these distances.
     Params:
     -------
@@ -185,18 +185,18 @@ def get_edge_wts_rgg(points, threshold, alpha = 1.0):
     ds = haversine_distances(v,v)
 
     # ## pick out edges less than threshold r
-    edges = [0]*len(points)**2
-    dists = [0]*len(points)**2
-    i = 0
-    for index, d in np.ndenumerate(ds):
-        if d < threshold:
-            edges[i] = index
-            dists[i] = d
-            i += 1
-    #delete 
-    first_idx = edges.index(0)
-    edges = edges[:first_idx]
-    dists = dists[:first_idx]
+    # edges = [0]*len(points)**2
+    # dists = [0]*len(points)**2
+    # i = 0
+    # for index, d in np.ndenumerate(ds):
+    #     if d < threshold:
+    #         edges[i] = index
+    #         dists[i] = d
+    #         i += 1
+    # #delete 
+    # first_idx = edges.index(0)
+    # edges = edges[:first_idx]
+    # dists = dists[:first_idx]
     
     #import pdb; pdb.set_trace() 
     #edges = [e for d,e in ds if (d < threshold)]
@@ -205,13 +205,15 @@ def get_edge_wts_rgg(points, threshold, alpha = 1.0):
 
     #e0 = np.array([e[0] for e in edges] + [e[1] for e in edges])
     #e1 = np.array([e[1] for e in edges] + [e[0] for e in edges])
-    e0 = np.array([e[0] for e in edges])
-    e1 = np.array([e[1] for e in edges])
+    # e0 = np.array([e[0] for e in edges])
+    # e1 = np.array([e[1] for e in edges])
     #import pdb; pdb.set_trace()
 
+    # convert to birthtimes
+    ds = np.where(ds < threshold, -np.inf, np.inf)
 
     # unpack only the ones whose distance is greater than the threshold.
-    return sparse.coo_matrix((dists, (e0, e1)), shape=(len(v), len(v)))
+    return sparse.coo_matrix(ds)
 
     #return sparse.coo_matrix(ds)
 
