@@ -307,7 +307,7 @@ def critical_rgg_scaling(n):
     k = 2 # dimension
     r = 1.0
     volume = 4.0*np.pi*r**2 # volume of manifold (sphere surface area)
-    tau = 0.1 # condition number assumption
+    tau = 1 # condition number assumption
     C = 1.0 # can be whatever
     C_1 = (4**k)*volume/((4.0*np.pi)/3.0)
     C_2 = C_1*(C**(-k))*np.exp(k*C/(8*tau))
