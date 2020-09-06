@@ -176,12 +176,7 @@ def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphe
 	return (node_wts,edge_wts,coordinate_set)
 
 
-
-
-
-
 ## Functions for visualization 
-
 def visualize_dynamic_network():
 	"""
 	Creates a termporary folder, then creates a movie of the results

@@ -157,7 +157,6 @@ def get_edge_wts(hull_obj, alpha = 1.0):
     
     return sparse.coo_matrix((ds, (e0, e1)), shape=(len(v), len(v)))
 
-
 def get_edge_wts_rgg(points, threshold, alpha = 1.0):
     """
     map edges to their birthtimes, for the random geometric graph model

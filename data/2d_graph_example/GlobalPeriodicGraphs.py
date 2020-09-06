@@ -82,7 +82,7 @@ def interpolateStates(V1, V2, NFrames):
 
 def getTauInterpolatedWindow(X, i1, Tau, dim):
     """
-    Creates a window with the the Tau interpolated graphs given a starting \
+    Creates a window with the the Tau interpolated graphs given a starting 
         time index, Tau, and dimension, using linear interpolation
     :param X: An Nxd array of values at the scalar function 
     :param i1: Index in X where the window starts
