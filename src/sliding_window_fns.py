@@ -20,7 +20,7 @@ def sliding_window(time_series, d, tau):
 
 
 # def function to get distance matrix from sliding window vectors
-def sw_distance_matrix(sw_vecs, bn_dist_matrix=None):
+def sw_distance_matrix(sw_vecs, bn_dist_matrix=None, rescale = None):
     ''' Get the L2 distance between sliding window vectors of barcodes; if bottleneck distance
     matrix is given, sliding window index is sufficent; otherwise, bottleneck dist needs to be
     calculated for each corresponding component of the sw vectors; is costlier'''
@@ -41,7 +41,12 @@ def sw_distance_matrix(sw_vecs, bn_dist_matrix=None):
                 sw_vec2 = sw_vecs[j]
                 dist = la.norm(list(map(lambda x, y: bn_dist_matrix[x][y], sw_vec1, sw_vec2)))
                 dist_matrix.append(dist)
-    return squareform(dist_matrix)
+
+    squared_dist_matrix = squareform(dist_matrix)
+
+    if rescale:
+        squared_dist_matrix = squared_dist_matrix*rescale/np.max(squared_dist_matrix)
+    return squared_dist_matrix
 
 
 
