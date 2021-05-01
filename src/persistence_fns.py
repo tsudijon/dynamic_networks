@@ -9,6 +9,8 @@ import gudhi as g
 from scipy.spatial.distance import squareform
 from scipy import sparse
 from ripser import ripser
+from joblib import Parallel, delayed
+from wasserstein import wasserstein_distance
 
 # get the maximum persistence object given a PD, in array form: an array of list of length 2.
 def get_maximum_persistence(PD):
@@ -60,9 +62,11 @@ def get_bottleneck_dist(b1, b2, e=0):
 def get_bottleneck_dist_matrix(barcodes):
     ''' Given a set of barcodes computes the pairwise bottleneck distance and returns the distance
     matrix'''
+    # how is the infinity points matched up?
     nBarcodes = len(barcodes)
     dist_matrix = []
     for i in range(nBarcodes):
+        print('Computing Row %s' %i)
         bi = np.array(barcodes[i])
         bi = bi[np.isfinite(bi[:, 1]), :]
         for j in range(i + 1, nBarcodes):
@@ -72,3 +76,24 @@ def get_bottleneck_dist_matrix(barcodes):
             dist_matrix.append(bottle_dist)
     return squareform(dist_matrix)
 
+
+def get_wasserstein_dist_matrix(barcodes, p):
+    ''' Given a set of barcodes computes the pairwise bottleneck distance and returns the distance
+    matrix'''
+    # how is the infinity points matched up?
+    nBarcodes = len(barcodes)
+    dist_matrix_jobs = []
+
+    barcodes = [np.array(b) for b in barcodes]
+    barcodes = [b[np.isfinite(b[:, 1]), :] for b in barcodes]
+
+    for i in range(nBarcodes):
+        for j in range(i+1, nBarcodes):
+            dist_matrix_jobs.append((barcodes[i],barcodes[j]))
+
+    dist_matrix = Parallel(n_jobs = 4)(delayed(get_wasserstein_dist)(b[0],b[1],p) for b in dist_matrix_jobs)
+
+    return squareform(dist_matrix)
+
+def get_wasserstein_dist(bi,bj,p):
+    return wasserstein_distance(bi, bj, order = p) # interal power will be 2 instead of infinity  

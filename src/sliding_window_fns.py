@@ -10,11 +10,17 @@ from scipy.spatial.distance import squareform
 import persistence_fns as pf
 
 
-def sliding_window(time_series, d, tau):
+### TODO: allow for fractional TAU?
+def sliding_window(time_series, d, tau, max_index):
     ''' Given a time series, return [f(t), f(t + tau), f(t + 2 * tau), ..., f(t + d * tau)];
     i.e. return a sliding window embedding'''
     sw_embedding = []
-    for i in range(len(time_series) - ((d - 1) * tau)):  # -1 b/c python loop ends at last index
+
+    if not max_index:
+        max_index = len(time_series) - ((d - 1) * tau)
+
+    last_sw_index = min(max_index, len(time_series) - ((d - 1) * tau))
+    for i in range(last_sw_index):  # -1 b/c python loop ends at last index
         sw_embedding.append(time_series[i:i + d * tau:tau])
     return sw_embedding
 

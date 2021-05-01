@@ -11,7 +11,7 @@ import sys
 sys.path.append('../data/')
 from helper import timing
 
-def get_sensor_lifetimes(initial_points,time, birth_rate, death_rate, manifold = 'sphere'):
+def get_sensor_lifetimes(initial_points,time, birth_rate, death_rate, domain_lengths = (1,1), manifold = 'sphere', seed = 17):
 	"""
 	Simulates sensors lifetimes on a given space.
 
@@ -34,6 +34,7 @@ def get_sensor_lifetimes(initial_points,time, birth_rate, death_rate, manifold =
 		an interval tree; each node of the tree is 
 		(birth,death,coordinate) of a point.
 	"""
+	np.random.seed(seed)
 
 	l1 = 1/birth_rate
 	l2 = 1/death_rate
@@ -47,9 +48,11 @@ def get_sensor_lifetimes(initial_points,time, birth_rate, death_rate, manifold =
 		if manifold == 'sphere':
 			return sphere.sample_uniform_sphere(1).tolist()[0]
 		elif manifold == 'plane':
-			return plane.sample_uniform(1).tolist()[0]
+			return plane.sample_uniform(1, domain_lengths[0], domain_lengths[1]).tolist()[0]
+		elif manifold == 'circle':
+			return np.random.uniform()
 		else:
-			raise Exception("spaces supported include 'sphere', 'plane' ")
+			raise Exception("spaces supported include 'sphere', 'plane','circle' ")
 
 	while current_time < time:
 
@@ -122,7 +125,7 @@ def sample_dynamic_network(intervals, obs_times, obsfn, edge_wtsfn, manifold = '
 # another idea - can search for closest r' points in Eucclidean space, r' is the appropriate radius such that induced great circle on 
 # the sphere has specified distance
 
-def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphere'):
+def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphere', rescale_node_weight = None):
 	"""
 	Given set of observations, creates the dynamic network at those times
 	given the birth/death times of the sensors. 
@@ -136,8 +139,6 @@ def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphe
 		list of times at which to sample obs function
 	obsfn:
 		function from which to sample
-	edge_wtsfn:
-		function applied to edge wts
 	Output: tuple
 		(node_wts,edge_wts,all_points)
 		node_wts: list of node wts at each time index
@@ -149,23 +150,42 @@ def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphe
 	node_wts = []
 	edge_wts = []
 	# we can maybe parallelize.
-	def parallel_helper(intervals, t, obs_fn, manifold):
+	def parallel_helper(intervals, t, obs_fn, manifold, rescale_node_weight):
 		points = intervals.at(t)
 		coordinates = [ p[2] for p in list(points) ]
 		if manifold == 'sphere':
 			threshold = sphere.critical_rgg_scaling(len(points))
 			node_wt = np.array([obsfn(t,np.array(p)) for p in coordinates])
 			edge_wt = sphere.get_edge_wts_rgg(np.array(coordinates), threshold)
-			 # convert to birthtimes
+
 		elif manifold == 'plane':
+			threshold = plane.supercritical_rgg_scaling(len(points))
 			node_wt = plane.get_node_wts(t,np.array(coordinates),obsfn)
-			edge_wt = plane.get_edge_wts_rgg(np.array(coordinates))
+			edge_wt = plane.get_edge_wts_rgg(np.array(coordinates), threshold)
+
+		elif manifold == 'torus':
+			threshold = plane.critical_rgg_scaling(len(points))
+			node_wt = plane.get_node_wts(t,np.array(coordinates),obsfn)
+			edge_wt = plane.get_edge_wts_rgg_torus(np.array(coordinates), threshold)
+
+		elif manifold == 'circle':
+			threshold = plane.supercritical_rgg_scaling_circle(len(points))
+			node_wt = plane.get_node_wts(t,np.array(coordinates),obsfn)
+			edge_wt = plane.get_edge_wts_rgg_circle(np.array(coordinates), threshold)	
+
+		elif manifold == 'interval':
+			threshold = plane.supercritical_rgg_scaling_circle(len(points))
+			node_wt = plane.get_node_wts(t,np.array(coordinates),obsfn)
+			edge_wt = plane.get_edge_wts_rgg_interval(np.array(coordinates), threshold)			
 		else:
 			return
+
+		if rescale_node_weight:
+			node_wt = node_wt*rescale_node_weight/np.max(np.abs(node_wt))
 		return (coordinates, node_wt, edge_wt)
 
 	num_cores = mp.cpu_count() - 4
-	results = Parallel(n_jobs = num_cores)(delayed(parallel_helper)(intervals,t,obsfn,manifold) for t in obs_times)
+	results = Parallel(n_jobs = num_cores)(delayed(parallel_helper)(intervals,t,obsfn,manifold,rescale_node_weight) for t in obs_times)
 
 	#results = [parallel_helper(intervals,t,obsfn,manifold) for t in obs_times]
 

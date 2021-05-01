@@ -24,6 +24,8 @@ from sklearn.metrics.pairwise import haversine_distances
 import multiprocessing as mp
 from joblib import Parallel, delayed
 
+from constants import MAX_FILTRATION_TIME
+
 
 
 
@@ -82,6 +84,14 @@ def periodic_northsouth_modulated(t,cds, T):
     coords = cartesian_to_spherical(cds)
     phi = coords[0,1]
     return 3 + 2*np.cos(2*np.pi*t/T + 2*phi)
+
+def periodic_northsouth_eastwest_modulated(t,cds,T):
+    coords = cartesian_to_spherical(cds)
+
+    phi = coords[0,1]
+    theta = coords[0,2]
+
+    return 3 + np.cos(2*np.pi*t/T + 3*phi) + np.sin(2*np.pi*t/T + 4*theta)
 
 def sph_harm_modulated(t,cds, T, m, n):
     """
@@ -175,46 +185,15 @@ def get_edge_wts_rgg(points, threshold, alpha = 1.0):
         A sparse matrix with the edge weights
 
     """
-    # need to make this faster? sklearn havesines, first changing to spherical
-    # v = np.array(points)
-    # edges = itr.product(range(len(v)),range(len(v)))
-    # ds = [(cartesian_to_sphere_distance(v[e[0],:], v[e[1],:]),e) for e in edges]
     
     v = cartesian_to_spherical(np.array(points))[:,1:]
     ds = haversine_distances(v,v)
 
-    # ## pick out edges less than threshold r
-    # edges = [0]*len(points)**2
-    # dists = [0]*len(points)**2
-    # i = 0
-    # for index, d in np.ndenumerate(ds):
-    #     if d < threshold:
-    #         edges[i] = index
-    #         dists[i] = d
-    #         i += 1
-    # #delete 
-    # first_idx = edges.index(0)
-    # edges = edges[:first_idx]
-    # dists = dists[:first_idx]
-    
-    #import pdb; pdb.set_trace() 
-    #edges = [e for d,e in ds if (d < threshold)]
-    #ds = [d for d,e in ds if (d < threshold)]
-    #ds = alpha*np.array(ds + ds)
-
-    #e0 = np.array([e[0] for e in edges] + [e[1] for e in edges])
-    #e1 = np.array([e[1] for e in edges] + [e[0] for e in edges])
-    # e0 = np.array([e[0] for e in edges])
-    # e1 = np.array([e[1] for e in edges])
-    #import pdb; pdb.set_trace()
-
     # convert to birthtimes
-    ds = np.where(ds < threshold, -np.inf, np.inf)
+    ds = np.where(ds < threshold, -np.inf, MAX_FILTRATION_TIME)
 
-    # unpack only the ones whose distance is greater than the threshold.
     return sparse.coo_matrix(ds)
 
-    #return sparse.coo_matrix(ds)
 
 """###########################################
 Functions for creating a dynamic network and computing
@@ -319,8 +298,7 @@ Functions for analyzing persistence diagrams
 ###########################################"""
 
 def get_maximum_persistence(PD):
-    num_dim = len(PD)
-
+    
     #has to be a 2D array
     def max_pers(array): 
         if len(array) == 0:
