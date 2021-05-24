@@ -36,7 +36,8 @@ setup(
         'numpy',
         'matplotlib',
         'scipy',
-        'intervaltree'
+        'intervaltree',
+        'haversine'
     ],
     python_requires='>=3.6',
     classifiers=[
