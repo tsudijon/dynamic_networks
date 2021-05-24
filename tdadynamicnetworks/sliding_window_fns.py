@@ -5,7 +5,7 @@ from __future__ import division
 import numpy as np
 import numpy.linalg as la
 from scipy.spatial.distance import squareform
-import persistence_fns as pf
+from .persistence_fns import get_bottleneck_dist
 
 
 ### TODO: allow for fractional TAU?
@@ -35,7 +35,7 @@ def sw_distance_matrix(sw_vecs, bn_dist_matrix=None, rescale = None):
             sw_vec1 = sw_vecs[i]
             for j in range(i + 1, nVecs):
                 sw_vec2 = sw_vecs[j]
-                dist = la.norm(list(map(lambda x, y: pf.get_bottleneck_dist(x, y), sw_vec1, sw_vec2)))
+                dist = la.norm(list(map(lambda x, y: get_bottleneck_dist(x, y), sw_vec1, sw_vec2)))
                 dist_matrix.append(dist)
     elif bn_dist_matrix is not None:
         dist_matrix = []
