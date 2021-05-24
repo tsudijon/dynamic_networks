@@ -1,27 +1,7 @@
-import scipy.spatial as sp
-from scipy.spatial.distance import squareform
 from scipy import sparse
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import itertools as itr
-import os
-import sys
-
-
-from ripser import ripser
-from persim import plot_diagrams
-from sklearn import manifold
-import scipy.io as sio
-import itertools as itr
-
-from scipy.spatial.distance import euclidean
-
-import multiprocessing as mp
-from joblib import Parallel, delayed
-sys.path.append('/Users/timothysudijono/projects/Research/dynamic_networks/data/')
-from helper import memoize
 
 """###########################################
 Functions for sampling the grids
@@ -183,50 +163,10 @@ def nonstationary_periodic_plane_random_cos_series(t,cds,T, seed = 17):
             vals += np.cos(2*np.pi*(t+r[0])/T)*np.cos((i*x + j*y) + r[1])*r[2]
     return vals
 
-#rf1 = sample_Gaussian_field(seed = 17)
-#rf2 = sample_Gaussian_field(seed = 289)
-#rf2 = -rf1
-
-# can make this even better via interpolation
-def periodic_plane_random_field(t, cds, T):
-    # initialize the random field once, then just look up.
-    r = t%T
-    if r <= T/2.:
-        field = rf1*(1.-2.*r/T) + rf2*(2.*r/T)
-    else:
-        field = rf1*(2.*r/T) + rf1*(1-2.*r/T)
-    
-    # look up cds in field, rounded; should implement this in a more robust way
-    idx = 100*np.round(cds,2).astype(int)
-
-    return field[idx]
-
-
 import numpy as np
 import matplotlib.pyplot as plt
 
-def rbf_kernel_mat(mat, var = 1):
-    return np.exp(-mat/(2*var))
-
-def gram_matrix(grid):
-    xs,ys = np.meshgrid(grid,grid)
-    coords = np.array((xs.ravel(),ys.ravel())).T
-
-    diffs = coords[:,np.newaxis] - coords
-    return rbf_kernel_mat((diffs**2).sum(axis = 2), 0.001)
-
-@memoize
-def sample_Gaussian_field(seed = 17):
-
-    grid = np.arange(0, 1, 0.01)
-    mean = np.zeros(len(grid)**2)
-    gram = gram_matrix(grid)
-    field = np.random.multivariate_normal(mean, gram, seed).reshape(len(grid),len(grid))
-    return field
-
-
 ### Non periodic example. time varying random field?
-from mpl_toolkits.mplot3d import Axes3D  
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 

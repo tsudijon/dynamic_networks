@@ -1,30 +1,24 @@
 import scipy.spatial as sp
-from scipy.spatial.distance import squareform
 from scipy import sparse
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import itertools as itr
-import os
 import sys
 sys.path.append('../src/')
 import graph_fns as gf
 import persistence_fns as pf
 import sliding_window_fns as sw
 from ripser import ripser
-from persim import plot_diagrams
-from sklearn import manifold
 import scipy.io as sio
 import itertools as itr
+from persim import plot_dgms
 
-sys.path.append('../data/')
-from helper import timing
 from sklearn.metrics.pairwise import haversine_distances
 import multiprocessing as mp
 from joblib import Parallel, delayed
 
-from constants import MAX_FILTRATION_TIME
 
 
 
@@ -114,7 +108,6 @@ def sph_harm_modulated(t,cds, T, m, n):
     return np.sin(2*np.pi*t/T)*np.real(sph_harm(n, m, theta, phi))
 
 def inverse_x_phi_fn(x):
-    1.0/(a+0.1)
     return np.array([1/(a + 0.1) for a in x])
 
 def linear_phi_fn(x):
@@ -190,7 +183,7 @@ def get_edge_wts_rgg(points, threshold, alpha = 1.0):
     ds = haversine_distances(v,v)
 
     # convert to birthtimes
-    ds = np.where(ds < threshold, -np.inf, MAX_FILTRATION_TIME)
+    ds = np.where(ds < threshold, -np.inf, np.inf)
 
     return sparse.coo_matrix(ds)
 
