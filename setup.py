@@ -1,23 +1,10 @@
 
-import sys
-import os
-import platform
-
 from setuptools import setup
-from setuptools.extension import Extension
 
-# Ensure Cython is installed before we even attempt to install linmdtw
-try:
-    from Cython.Build import cythonize
-    from Cython.Distutils import build_ext
-except:
-    print("You don't seem to have Cython installed. Please get a")
-    print("copy from www.cython.org or install it with `pip install Cython`")
-    sys.exit(1)
 
 ## Get version information from _version.py
 import re
-VERSIONFILE="linmdtw/_version.py"
+VERSIONFILE="tdadynamicnetworks/_version.py"
 verstrline = open(VERSIONFILE, "rt").read()
 VSRE = r"^__version__ = ['\"]([^'\"]*)['\"]"
 mo = re.search(VSRE, verstrline, re.M)
@@ -42,21 +29,15 @@ setup(
     license='Apache2',
     packages=['tdadynamicnetworks'],
     install_requires=[
-        'Cython',
+        'POT',
+        'ripser',
+        'gudhi',
+        'persim',
         'numpy',
         'matplotlib',
-        'scipy'
+        'scipy',
+        'intervaltree'
     ],
-    extras_require={
-        'testing': [ # `pip install -e ".[testing]"``
-            'pytest'  
-        ],
-        'docs': [ # `pip install -e ".[docs]"`
-            'linmdtw_docs_config'
-        ],
-        'examples': []
-    },
-    cmdclass={'build_ext': CustomBuildExtCommand},
     python_requires='>=3.6',
     classifiers=[
         'Intended Audience :: Science/Research',
