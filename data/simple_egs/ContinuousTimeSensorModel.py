@@ -3,13 +3,11 @@ import intervaltree as it
 import scipy.spatial as sp
 import SphereExample as sphere
 import PlaneExample as plane
-import networkx as nx
 import multiprocessing as mp
 from joblib import Parallel, delayed
 
 import sys
 sys.path.append('../data/')
-from helper import timing
 
 def get_sensor_lifetimes(initial_points,time, birth_rate, death_rate, domain_lengths = (1,1), manifold = 'sphere', seed = 17):
 	"""
@@ -122,8 +120,6 @@ def sample_dynamic_network(intervals, obs_times, obsfn, edge_wtsfn, manifold = '
 
 	return (node_wts,edge_wts,coordinate_set)
 
-# another idea - can search for closest r' points in Eucclidean space, r' is the appropriate radius such that induced great circle on 
-# the sphere has specified distance
 
 def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphere', rescale_node_weight = None):
 	"""
@@ -195,13 +191,6 @@ def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphe
 
 	return (node_wts,edge_wts,coordinate_set)
 
-
-## Functions for visualization 
-def visualize_dynamic_network():
-	"""
-	Creates a termporary folder, then creates a movie of the results
-	"""
-	pass
 
 
 def vary_birth_death_params(T, wl, bd_rate_vals, dim_vals, manifold = 'sphere'):
