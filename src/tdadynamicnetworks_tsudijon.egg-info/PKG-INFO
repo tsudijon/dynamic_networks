@@ -1,0 +1,38 @@
+Metadata-Version: 2.1
+Name: tdadynamicnetworks-tsudijon
+Version: 0.0.1
+Summary: A pipeline for detecting periodicity in node-weighted dynamic networks via topological data analysis.
+Home-page: https://github.com/tsudijon/dynamic_networks
+Author: T. Sudijono
+Author-email: timothysudijono@gmail.com
+License: UNKNOWN
+Project-URL: Bug Tracker, https://github.com/tsudijon/dynamic_networks/issues
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: LICENSE.txt
+
+# dynamic_networks
+
+## Introduction
+
+## Dependencies
+Standard computing python libraries: numpy, scipy.
+
+TDA python libraries (can be installed via pip):
+
+- Ripser 
+- persim
+- gudhi
+
+## Code Description and Pipeline usage.
+
+See `notebooks/tutorial.py` for a usage of the full pipeline.
+
+## Notebooks / Experiments
+
+## References
+
