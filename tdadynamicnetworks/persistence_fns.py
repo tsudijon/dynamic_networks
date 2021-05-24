@@ -2,15 +2,13 @@
 BP: Functions relating to computing persistent homology'''
 
 from __future__ import division
-import os
-import sys
 import numpy as np
 import gudhi as g
 from scipy.spatial.distance import squareform
 from scipy import sparse
 from ripser import ripser
 from joblib import Parallel, delayed
-from wasserstein import wasserstein_distance
+from .wasserstein import wasserstein_distance
 
 # get the maximum persistence object given a PD, in array form: an array of list of length 2.
 def get_maximum_persistence(PD):

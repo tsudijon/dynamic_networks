@@ -3,11 +3,9 @@ BP: Functions related to computing the sliding window'''
 
 from __future__ import division
 import numpy as np
-import sys
-import os
 import numpy.linalg as la
 from scipy.spatial.distance import squareform
-import persistence_fns as pf
+import .persistence_fns as pf
 
 
 ### TODO: allow for fractional TAU?
