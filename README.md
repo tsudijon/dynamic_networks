@@ -11,7 +11,9 @@ TDA python libraries (can be installed via pip):
 - persim
 - gudhi
 
-See `requirements.txt` for a full list of dependencies.
+See `requirements.txt` for a full list of dependencies. You can install the package via pip as
+
+`pip3 install tdadynamicnetworks`.
 
 ## Code Description and Pipeline usage
 
@@ -22,6 +24,8 @@ See the notebooks for a usage of the full pipeline. At a high level, we apply th
 - Calculate the distance matrix on the resulting time series of barcodes, using `persistence_fns.get_bottleneck_dist_matrix`.
 - Then run `sliding_window_fns.sliding_window` and `sliding_window_fns.sw_distance_matrix` to create the sliding window embedding of the barcode time series. Note that `sliding_window_fns.sliding_window` generates the indices of the time series needed to create the sliding window; this is then passed to the second function to subset the whole time series distance matrix in order to create the distance matrix of the sliding window.
 - Calculate the persistence of the sliding window point cloud via the `ripser` package, using its distance matrix.
+
+If you have pip installed the package, call each of the above functions using the module name `tdadynamicnetworks`.
 
 ## Notebooks / Experiments
 
