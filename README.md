@@ -2,6 +2,8 @@
 
 ## Introduction
 
+This package implements a pipeline to detect periodicity and quasiperiodicity in time series of networks, which may have node and edge weights. The method is based on a topological approach which first summarizes the time series of networks using a time series of sublevel set persistence diagrams; these are informative representations of the connectivity information and node weights of the network. Motivated by a result from dynamical systems theory, Takens' theorem, which states that a time-delay embedding of a time series can capture its geometry, we analyze the time delay embedding of this persistence diagram time series. In particular, a circular or toroidal geometry reflects periodic and quasiperiodic behavior in the time series, respectively.
+
 ## Dependencies
 Standard computing python libraries: numpy, scipy, matplotlib.
 
@@ -31,7 +33,7 @@ If you have pip installed the package, call each of the above functions using th
 
 The experiments on NOAA weather data utilize datasets which are too unwieldy to include in git -- these need to be downloaded from the [NOAA](https://www.ncei.noaa.gov/metadata/geoportal/rest/metadata/item/gov.noaa.ncdc:C00516/html) in order for the relevant notebooks to be run.
 
-Simulated experiments in the `notebooks` folder rely on functions in `src/simple_egs/`.
+Simulated experiments in the `notebooks` folder rely on functions in the submodule `tdadynamicnetworks/examples/`.
 
 ## References
 

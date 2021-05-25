@@ -1,5 +1,5 @@
 
-from setuptools import setup
+import setuptools
 
 
 ## Get version information from _version.py
@@ -18,8 +18,8 @@ with open('README.md') as f:
     long_description = f.read()
 
 
-setup(
-    name="tdadynamicnetworks-tsudijon",
+setuptools.setup(
+    name="tdadynamicnetworks",
     version=verstr,
     description="A pipeline for detecting periodicity in node-weighted dynamic networks via topological data analysis",
     long_description=long_description,
@@ -27,7 +27,7 @@ setup(
     author="Tim Sudijono",
     author_email="timothysudijono@gmail.com",
     license='Apache2',
-    packages=['tdadynamicnetworks'],
+    packages=setuptools.find_packages(),
     install_requires=[
         'POT',
         'ripser',
