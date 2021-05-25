@@ -12,7 +12,7 @@ from .. import sliding_window_fns as sw
 from ripser import ripser
 import scipy.io as sio
 import itertools as itr
-from persim import plot_dgms
+from persim import plot_diagrams
 
 from sklearn.metrics.pairwise import haversine_distances
 import multiprocessing as mp
@@ -374,7 +374,7 @@ def do_example_sphere_filtration(change_param = 5, do_animation = False):
                 ax.plot(pts[simplex, 0], pts[simplex, 1], pts[simplex, 2], 'k-')
             plt.title("Timestep %i"%i)
             plt.subplot(122)
-            plot_dgms(dgm, labels=['H0'])
+            plot_diagrams(dgm, labels=['H0'])
             plt.xlim([4, 12])
             plt.ylim([4, 12])
             plt.title("%i Nodes, %i Dots"%(nw.shape[0]-2, dgm.shape[0]))
@@ -382,7 +382,7 @@ def do_example_sphere_filtration(change_param = 5, do_animation = False):
 
     PDs = apply_pipeline(node_wts, edge_wts, d = 60, tau = 1) # get the PDs
     plt.figure()
-    plot_dgms(PDs, show=False)
+    plot_diagrams(PDs, show=False)
     plt.show()
 
 def vary_parameters(change_param = 5, lamda=1, phi=linear_phi_fn):
