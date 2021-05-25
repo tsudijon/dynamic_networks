@@ -1,13 +1,10 @@
 import numpy as np 
 import intervaltree as it
 import scipy.spatial as sp
-import SphereExample as sphere
-import PlaneExample as plane
+from . import SphereExample as sphere
+from . import PlaneExample as plane
 import multiprocessing as mp
 from joblib import Parallel, delayed
-
-import sys
-sys.path.append('../data/')
 
 def get_sensor_lifetimes(initial_points,time, birth_rate, death_rate, domain_lengths = (1,1), manifold = 'sphere', seed = 17):
 	"""

@@ -19,7 +19,7 @@ with open('README.md') as f:
 
 
 setup(
-    name="tdadynamicnetworks",
+    name="tdadynamicnetworks-tsudijon",
     version=verstr,
     description="A pipeline for detecting periodicity in node-weighted dynamic networks via topological data analysis",
     long_description=long_description,

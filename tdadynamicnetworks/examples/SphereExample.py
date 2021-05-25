@@ -5,11 +5,10 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import itertools as itr
-import sys
-sys.path.append('../src/')
-import graph_fns as gf
-import persistence_fns as pf
-import sliding_window_fns as sw
+
+from .. import graph_fns as gf
+from .. import persistence_fns as pf
+from .. import sliding_window_fns as sw
 from ripser import ripser
 import scipy.io as sio
 import itertools as itr
@@ -463,8 +462,3 @@ def vary_parameters(change_param = 5, lamda=1, phi=linear_phi_fn):
     fig.suptitle('Max Persistence vs. tau and d', fontsize = 15)
     plt.savefig('sphere_Maxpers_and_ratio_change=%i_remove_old_pts' %change_param)
     plt.show()
-
-
-if __name__ == '__main__':
-    #do_example_sphere_filtration(do_animation=False)
-    vary_parameters()
