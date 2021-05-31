@@ -42,7 +42,8 @@ end = time.time()
 print("Sampling Sensor Lifetimes", end - start) 
 
 ## Create the Dynamic Network
-step_size = 0.05
+fac = 1
+step_size = 0.05/fac
 ts = np.arange(0,max_lifetime,step_size) 
 
 start = time.time()
@@ -71,20 +72,26 @@ end = time.time()
 print("Computing bottleneck", end - start) 
 
 wl = 2.0*T
-d = 10
-swe = sw.sliding_window(range(len(barcodes)), d=d, tau= int(wl/(d*step_size)), # Dummy time series?
+d = int(wl/step_size)
+swe = sw.sliding_window(range(len(barcodes)), d=d, tau=1, # Dummy time series?
                                     max_index = int(6.0*T/step_size) )
 
 print("Number of points in SW Embedding:", len(swe))
 sw_dist_matrix = sw.sw_distance_matrix(swe, bn_dist_matrix)
 sw_dist_matrix /= np.max(sw_dist_matrix)
 
-
 PDs2 = ripser(sw_dist_matrix, distance_matrix=True, maxdim=1, coeff=2)['dgms']
 PDs3 = ripser(sw_dist_matrix, distance_matrix=True, maxdim=1, coeff=3)['dgms']
 dgm1 = PDs3[1]
-score = np.max(dgm1[:, 1] - dgm1[:, 0])
+score = 0
+if dgm1.size > 0:
+    score = np.max(dgm1[:, 1] - dgm1[:, 0])
 print(score)
 
+plt.figure(figsize=(10, 5))
+plt.subplot(121)
 plot_diagrams(PDs3)
+plt.subplot(122)
+plt.imshow(sw_dist_matrix, cmap='magma_r')
+plt.colorbar()
 plt.show()
