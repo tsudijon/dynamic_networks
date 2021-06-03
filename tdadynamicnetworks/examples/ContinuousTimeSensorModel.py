@@ -29,12 +29,13 @@ def get_sensor_lifetimes(initial_points,time, birth_rate, death_rate, domain_len
 		an interval tree; each node of the tree is 
 		(birth,death,coordinate) of a point.
 	"""
-	np.random.seed(seed)
+	if seed:
+		np.random.seed(seed)
 
 	l1 = 1/birth_rate
 	l2 = 1/death_rate
 
-	births = [0]*initial_points #initialize 100 points
+	births = [0]*initial_points 
 	
 	current_time = 0
 	intervals = it.IntervalTree()
@@ -157,7 +158,7 @@ def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphe
 			edge_wt = plane.get_edge_wts_rgg(np.array(coordinates), threshold)
 
 		elif manifold == 'torus':
-			threshold = plane.critical_rgg_scaling(len(points))
+			threshold = plane.supercritical_rgg_scaling(len(points))
 			node_wt = plane.get_node_wts(t,np.array(coordinates),obsfn)
 			edge_wt = plane.get_edge_wts_rgg_torus(np.array(coordinates), threshold)
 
@@ -177,7 +178,7 @@ def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphe
 			node_wt = node_wt*rescale_node_weight/np.max(np.abs(node_wt))
 		return (coordinates, node_wt, edge_wt)
 
-	num_cores = mp.cpu_count() - 4
+	num_cores = mp.cpu_count() - 1
 	results = Parallel(n_jobs = num_cores)(delayed(parallel_helper)(intervals,t,obsfn,manifold,rescale_node_weight) for t in obs_times)
 
 	#results = [parallel_helper(intervals,t,obsfn,manifold) for t in obs_times]
