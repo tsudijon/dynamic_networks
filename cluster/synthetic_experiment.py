@@ -32,17 +32,18 @@ obsfn = lambda t, p: plane.nonstationary_periodic_plane_random_cos_series(t,p,T,
 # can add some random time varying rotation, 
 # or on torus can add some noise.
 
-lambda1 = 25
+lambda1 = 5
 lambda2 = lambda1
 
 start = time.time()
-sensor_lifetimes = ctsm.get_sensor_lifetimes(250, max_lifetime, lambda1, lambda2, manifold = 'plane')
+sensor_lifetimes = ctsm.get_sensor_lifetimes(1500, max_lifetime, lambda1, lambda2,
+											domain_lengths = (1,1), manifold = 'plane', seed = seed)
 
 end = time.time()
 print("Sampling Sensor Lifetimes", end - start) 
 
 ## Create the Dynamic Network
-fac = 1
+fac = 5
 step_size = 0.05/fac
 ts = np.arange(0,max_lifetime,step_size) 
 
@@ -72,7 +73,7 @@ end = time.time()
 print("Computing bottleneck", end - start) 
 
 wl = 2.0*T
-d = int(wl/step_size)
+d = int(wl/(step_size))
 swe = sw.sliding_window(range(len(barcodes)), d=d, tau=1, # Dummy time series?
                                     max_index = int(6.0*T/step_size) )
 
@@ -88,10 +89,15 @@ if dgm1.size > 0:
     score = np.max(dgm1[:, 1] - dgm1[:, 0])
 print(score)
 
-plt.figure(figsize=(10, 5))
-plt.subplot(121)
+if PDs3[1].shape[0] > 0:
+	print('smallest birth time:', min(PDs3[1][:,0]))
+
+plt.figure(figsize=(10, 10))
+plt.subplot(221)
 plot_diagrams(PDs3)
-plt.subplot(122)
+plt.subplot(222)
 plt.imshow(sw_dist_matrix, cmap='magma_r')
+plt.subplot(223)
+plt.hist(sw_dist_matrix.flatten(), bins = 20)
 plt.colorbar()
 plt.show()

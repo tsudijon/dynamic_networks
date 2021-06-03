@@ -29,7 +29,8 @@ def get_sensor_lifetimes(initial_points,time, birth_rate, death_rate, domain_len
 		an interval tree; each node of the tree is 
 		(birth,death,coordinate) of a point.
 	"""
-	np.random.seed(seed)
+	if seed:
+		np.random.seed(seed)
 
 	l1 = 1/birth_rate
 	l2 = 1/death_rate
@@ -157,7 +158,7 @@ def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphe
 			edge_wt = plane.get_edge_wts_rgg(np.array(coordinates), threshold)
 
 		elif manifold == 'torus':
-			threshold = plane.critical_rgg_scaling(len(points))
+			threshold = plane.supercritical_rgg_scaling(len(points))
 			node_wt = plane.get_node_wts(t,np.array(coordinates),obsfn)
 			edge_wt = plane.get_edge_wts_rgg_torus(np.array(coordinates), threshold)
 
