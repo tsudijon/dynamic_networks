@@ -57,14 +57,15 @@ def get_bottleneck_dist(b1, b2, e=0):
     return g.bottleneck_distance(b1, b2, e)
 
 
-def get_bottleneck_dist_matrix(barcodes):
+def get_bottleneck_dist_matrix(barcodes, verbose = False):
     ''' Given a set of barcodes computes the pairwise bottleneck distance and returns the distance
     matrix'''
     # how is the infinity points matched up?
     nBarcodes = len(barcodes)
     dist_matrix = []
     for i in range(nBarcodes):
-        print('Computing Row %s' %i)
+        if verbose:
+            print('Computing Row %s' %i)
         bi = np.array(barcodes[i])
         bi = bi[np.isfinite(bi[:, 1]), :]
         for j in range(i + 1, nBarcodes):
