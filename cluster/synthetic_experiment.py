@@ -34,15 +34,15 @@ lambda1 = 25
 lambda2 = lambda1
 
 start = time.time()
-sensor_lifetimes = ctsm.get_fixed_sensors(250, max_lifetime, manifold = 'plane')
-#sensor_lifetimes = ctsm.get_sensor_lifetimes(1500, max_lifetime, lambda1, lambda2,
-#											domain_lengths = (1,1), manifold = 'plane', seed = seed)
+#sensor_lifetimes = ctsm.get_fixed_sensors(250, max_lifetime, manifold = 'plane')
+sensor_lifetimes = ctsm.get_sensor_lifetimes(1500, max_lifetime, lambda1, lambda2,
+											domain_lengths = (1,1), manifold = 'plane', seed = seed)
 
 end = time.time()
 print("Sampling Sensor Lifetimes", end - start) 
 
 ## Create the Dynamic Network
-fac = 10
+fac = 1
 step_size = 0.05/fac
 ts = np.arange(0,max_lifetime,step_size) 
 
