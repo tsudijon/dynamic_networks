@@ -1,10 +1,31 @@
 import numpy as np 
-import intervaltree as it
 import scipy.spatial as sp
 from . import SphereExample as sphere
 from . import PlaneExample as plane
 import multiprocessing as mp
 from joblib import Parallel, delayed
+from collections import deque
+
+def get_alive_sensor_locs(intervals, t):
+	"""
+	Return location of sensors that are alive at a particular time
+
+	Parameters
+	----------
+	intervals: tuple
+		(ndarray(N, 2) of birth deaths, ndarray(N, d) of coordinates) of a each sensor.
+	t: float
+		Time at which to query sensors
+	
+	Returns
+	-------
+	ndarray(M <= N, d)
+		Coordinates of found sensors
+	"""
+	b = intervals[0][:, 0]
+	d = intervals[0][:, 1]
+	return intervals[1][(t >= b)*(t <= d), :]
+
 
 def get_sensor_lifetimes(initial_points,time, birth_rate, death_rate, domain_lengths = (1,1), manifold = 'sphere', seed = 17):
 	"""
@@ -25,19 +46,21 @@ def get_sensor_lifetimes(initial_points,time, birth_rate, death_rate, domain_len
 		death rate
 	manifold: String
 		pass "sphere" or "plane"; generates random uniform samples from one of these spaces
-	Output: intervaltree
-		an interval tree; each node of the tree is 
-		(birth,death,coordinate) of a point.
+	Output: tuple
+		(ndarray(N, 2) of birth deaths, ndarray(N, d) of coordinates) of a each sensor.
 	"""
 	np.random.seed(seed)
 
 	l1 = 1/birth_rate
 	l2 = 1/death_rate
 
-	births = [0]*initial_points #initialize 100 points
+	births = deque()
+	for i in range(initial_points):
+		births.append(0)
 	
 	current_time = 0
-	intervals = it.IntervalTree()
+	intervals = []
+	points = []
 
 	def sample_point():
 		if manifold == 'sphere':
@@ -63,13 +86,55 @@ def get_sensor_lifetimes(initial_points,time, birth_rate, death_rate, domain_len
 		if np.random.rand() < l1/(l1 + l2):
 			births.append(current_time)
 		else:
-			intervals[births.pop(0):current_time] = sample_point()
+			intervals.append([births.popleft(), current_time])
+			points.append(sample_point())
 
 	#add the remaining nodes:
-	for i in range(len(births[:-1])):
-		intervals[births[i]:time] = sample_point()
+	while len(births) > 0:
+		intervals.append([births.popleft(), current_time])
+		points.append(sample_point())
+	intervals = np.array(intervals)
+	points = np.array(points)
+	return (intervals, points)
 
-	return intervals
+
+def get_fixed_sensors(initial_points,time, domain_lengths = (1,1), manifold = 'sphere', seed = 17):
+	"""
+	Simulates sensors lifetimes on a given space.
+
+	See the ContinuousTimeSphereExample, or the ContinuousTimPlaneExample notebook for
+	details on implementation.
+
+	
+	Parameters
+	-------------------------------------
+	initial_points: int
+		Number of points to sample
+	time: float
+		simulate the queueing model up to this time
+	manifold: String
+		pass "sphere" or "plane"; generates random uniform samples from one of these spaces
+	Output: intervaltree
+		an interval tree; each node of the tree is 
+		(birth,death,coordinate) of a point.
+	"""
+	def sample_point():
+		if manifold == 'sphere':
+			return sphere.sample_uniform_sphere(1).tolist()[0]
+		elif manifold == 'plane':
+			return plane.sample_uniform(1, domain_lengths[0], domain_lengths[1]).tolist()[0]
+		elif manifold == 'circle':
+			return np.random.uniform()
+		else:
+			raise Exception("spaces supported include 'sphere', 'plane','circle' ")
+	intervals = []
+	points = []
+	for i in range(initial_points):
+		intervals.append([0, time])
+		points.append(sample_point())
+	intervals = np.array(intervals)
+	points = np.array(points)
+	return (intervals, points)
 
 
 def sample_dynamic_network(intervals, obs_times, obsfn, edge_wtsfn, manifold = 'sphere'):
@@ -80,8 +145,8 @@ def sample_dynamic_network(intervals, obs_times, obsfn, edge_wtsfn, manifold = '
 	Parameters
 	----------------------------
 	Input:
-	intervals: intervaltree
-		output of get_sensor_lifetimes
+	intervals: tuple
+		(ndarray(N, 2) of birth deaths, ndarray(N, d) of coordinates) of a each sensor.
 	obs_times: list of floats
 		list of times at which to sample obs function
 	obsfn:
@@ -99,9 +164,7 @@ def sample_dynamic_network(intervals, obs_times, obsfn, edge_wtsfn, manifold = '
 	node_wts = []
 	edge_wts = []
 	for t in obs_times:
-		points = intervals.at(t)
-		coordinates = [ p[2] for p in list(points) ]
-
+		coordinates = get_alive_sensor_locs(intervals, t)
 		coordinate_set.append(coordinates)
 
 		if manifold == 'sphere':
@@ -118,7 +181,7 @@ def sample_dynamic_network(intervals, obs_times, obsfn, edge_wtsfn, manifold = '
 	return (node_wts,edge_wts,coordinate_set)
 
 
-def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphere', rescale_node_weight = None):
+def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphere', rescale_node_weight = None, verbose=False):
 	"""
 	Given set of observations, creates the dynamic network at those times
 	given the birth/death times of the sensors. 
@@ -126,8 +189,8 @@ def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphe
 	Parameters
 	----------------------------
 	Input:
-	intervals: intervaltree
-		output of get_sensor_lifetimes
+	intervals: tuple
+		(ndarray(N, 2) of birth deaths, ndarray(N, d) of coordinates) of a each sensor.
 	obs_times: list of floats
 		list of times at which to sample obs function
 	obsfn:
@@ -135,58 +198,71 @@ def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphe
 	Output: tuple
 		(node_wts,edge_wts,all_points)
 		node_wts: list of node wts at each time index
+	verbose: boolean
+		Whether to print timing information
 	"""
 	### query tree at each timestep ###
 	#num_cores = int(0.5*multiprocessing.cpu_count())
+	import time
 
 	coordinate_set = []
 	node_wts = []
-	edge_wts = []
+	edges = []
 	# we can maybe parallelize.
-	def parallel_helper(intervals, t, obs_fn, manifold, rescale_node_weight):
-		points = intervals.at(t)
-		coordinates = [ p[2] for p in list(points) ]
+	def parallel_helper(intervals, t, obsfn, manifold, rescale_node_weight):
+		tic = time.time()
+		coordinates = get_alive_sensor_locs(intervals, t)
+		N = coordinates.shape[0]
+		if verbose:
+			print("Elapsed time intervals: {}".format(time.time()-tic))
 		if manifold == 'sphere':
-			threshold = sphere.critical_rgg_scaling(len(points))
+			threshold = sphere.critical_rgg_scaling(N)
 			node_wt = np.array([obsfn(t,np.array(p)) for p in coordinates])
-			edge_wt = sphere.get_edge_wts_rgg(np.array(coordinates), threshold)
+			edge_wt = sphere.get_edge_wts_rgg(np.array(coordinates), threshold) ## TODO
 
 		elif manifold == 'plane':
-			threshold = plane.supercritical_rgg_scaling(len(points))
+			threshold = plane.supercritical_rgg_scaling(N)
+			tic = time.time()
 			node_wt = plane.get_node_wts(t,np.array(coordinates),obsfn)
-			edge_wt = plane.get_edge_wts_rgg(np.array(coordinates), threshold)
+			if verbose:
+				print("Elapsed Time Nodes: {}".format(time.time()-tic))
+			tic = time.time()
+			edge = plane.get_edges_rgg(np.array(coordinates), threshold)
+			if verbose:
+				print("Elapsed Time Edges: {}".format(time.time()-tic))
 
 		elif manifold == 'torus':
-			threshold = plane.critical_rgg_scaling(len(points))
+			threshold = plane.critical_rgg_scaling(N)
 			node_wt = plane.get_node_wts(t,np.array(coordinates),obsfn)
-			edge_wt = plane.get_edge_wts_rgg_torus(np.array(coordinates), threshold)
+			edge_wt = plane.get_edge_wts_rgg_torus(np.array(coordinates), threshold) ## TODO
 
 		elif manifold == 'circle':
-			threshold = plane.supercritical_rgg_scaling_circle(len(points))
+			threshold = plane.supercritical_rgg_scaling_circle(N)
 			node_wt = plane.get_node_wts(t,np.array(coordinates),obsfn)
-			edge_wt = plane.get_edge_wts_rgg_circle(np.array(coordinates), threshold)	
+			edge_wt = plane.get_edge_wts_rgg_circle(np.array(coordinates), threshold) ## TODO	
 
 		elif manifold == 'interval':
-			threshold = plane.supercritical_rgg_scaling_circle(len(points))
+			threshold = plane.supercritical_rgg_scaling_circle(N)
 			node_wt = plane.get_node_wts(t,np.array(coordinates),obsfn)
-			edge_wt = plane.get_edge_wts_rgg_interval(np.array(coordinates), threshold)			
+			edge_wt = plane.get_edge_wts_rgg_interval(np.array(coordinates), threshold) ## TODO	
 		else:
 			return
 
 		if rescale_node_weight:
 			node_wt = node_wt*rescale_node_weight/np.max(np.abs(node_wt))
-		return (coordinates, node_wt, edge_wt)
+		return (coordinates, node_wt, edge)
 
 	num_cores = mp.cpu_count() - 4
-	results = Parallel(n_jobs = num_cores)(delayed(parallel_helper)(intervals,t,obsfn,manifold,rescale_node_weight) for t in obs_times)
+	#results = Parallel(n_jobs = num_cores)(delayed(parallel_helper)(intervals,t,obsfn,manifold,rescale_node_weight) for t in obs_times)
+	results = [parallel_helper(intervals,t,obsfn,manifold,rescale_node_weight) for t in obs_times]
 
 	#results = [parallel_helper(intervals,t,obsfn,manifold) for t in obs_times]
 
 	coordinate_set = [res[0] for res in results]
 	node_wts = [res[1] for res in results]
-	edge_wts = [res[2] for res in results]
+	edges = [res[2] for res in results]
 
-	return (node_wts,edge_wts,coordinate_set)
+	return (node_wts,edges,coordinate_set)
 
 
 

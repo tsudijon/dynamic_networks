@@ -25,7 +25,7 @@ def get_maximum_persistence(PD):
 
 
 # turn graph into a valid filtration; max of lamda * node weights and edge weights
-def get_filtration(node_wts, edge_wts):
+def get_filtration(node_wts, edges):
     """
     Turn graph into a valid filtration; each off diagonal entry of the adjacency matrix is the
     maximum of edge weights and node weights
@@ -33,15 +33,13 @@ def get_filtration(node_wts, edge_wts):
     ----------
     node_wts: ndarray(N)
         A list of node weights
-    edge_wts: scipy.sparse(N, N)
-        A sparse matrix of edge weights
+    edges: ndarray(N, 2)
+        Indices into points of the edges that exist in the graph
     """
-    assert node_wts.size == edge_wts.shape[0], 'Unequal number of edge wts and node wts'
     N = len(node_wts)
-    ew = edge_wts.tocoo()
-    row, col, data = ew.row, ew.col, np.array(ew.data)
-    data = np.maximum(data, node_wts[row])
-    data = np.maximum(data, node_wts[col])
+    row = edges[:, 0]
+    col = edges[:, 1]
+    data = np.maximum(node_wts[row], node_wts[col]) # lower star
     filtration_matrix = sparse.coo_matrix((data, (row, col)), shape=(N, N))
     #filtration_matrix += sparse.spdiags(node_wts, 0, N, N) # why dont we need this line?
     return filtration_matrix

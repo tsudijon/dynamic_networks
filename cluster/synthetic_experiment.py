@@ -18,16 +18,14 @@ from ripser import ripser
 from persim import plot_diagrams
 import time
 
-manifold = 'torus'
+manifold = 'plane'
 seed = 25
 
 ## Setup Sensor Lifetimes 
 max_lifetime = 4
 
 T = 1
-#obsfn = lambda t, p: plane.periodic_plane_stationary(t,p,1) # T doesn't matter here
-obsfn = lambda t, p: plane.nonstationary_periodic_plane_random_cos_series(t,p,T, seed=seed) # add some sort of isometry. 
-# seed 16 = mobius
+obsfn = lambda t, p: plane.periodic_plane_random_cos_series(t,p,1, seed) # T doesn't matter here
 
 # can add some random time varying rotation, 
 # or on torus can add some noise.
@@ -36,18 +34,20 @@ lambda1 = 25
 lambda2 = lambda1
 
 start = time.time()
-sensor_lifetimes = ctsm.get_sensor_lifetimes(250, max_lifetime, lambda1, lambda2, manifold = 'plane')
+sensor_lifetimes = ctsm.get_fixed_sensors(250, max_lifetime, manifold = 'plane')
+#sensor_lifetimes = ctsm.get_sensor_lifetimes(1500, max_lifetime, lambda1, lambda2,
+#											domain_lengths = (1,1), manifold = 'plane', seed = seed)
 
 end = time.time()
 print("Sampling Sensor Lifetimes", end - start) 
 
 ## Create the Dynamic Network
-fac = 1
+fac = 10
 step_size = 0.05/fac
 ts = np.arange(0,max_lifetime,step_size) 
 
 start = time.time()
-(node_wts,edge_wts, allpoints) = ctsm.sample_dynamic_geometric_graph(sensor_lifetimes, ts,
+(node_wts,edges, allpoints) = ctsm.sample_dynamic_geometric_graph(sensor_lifetimes, ts,
                                                                      obsfn = obsfn, manifold = manifold)
 end = time.time()
 print("Sampling Dynamic Network", end - start) 
@@ -56,7 +56,7 @@ import multiprocessing as mp
 from joblib import Parallel, delayed
 
 start = time.time()
-filtration_matrix = list(map(lambda n, e: pf.get_filtration(n, e), node_wts, edge_wts))
+filtration_matrix = list(map(lambda n, e: pf.get_filtration(n, e), node_wts, edges))
 end = time.time()
 print("Converting to filtration matrices", end - start) 
 
@@ -94,4 +94,20 @@ plot_diagrams(PDs3)
 plt.subplot(122)
 plt.imshow(sw_dist_matrix, cmap='magma_r')
 plt.colorbar()
-plt.show()
+plt.savefig("NetworkDist.png")
+
+
+plt.figure(figsize=(12, 6))
+for i, t in enumerate(ts):
+    plt.clf()
+    plt.subplot(121)
+    X = allpoints[i]
+    f = node_wts[i]
+    plt.scatter(X[:, 0], X[:, 1], c=f, cmap='magma_r', zorder=10)
+    for e in edges[i]:
+        x1, y1 = X[e[0], :]
+        x2, y2 = X[e[1], :]
+        plt.plot([x1, x2], [y1, y2], c='C0', linewidth=1, linestyle='--')
+    plt.subplot(122)
+    plot_diagrams(barcodes[i])
+    plt.savefig("Network{}.png".format(i))
