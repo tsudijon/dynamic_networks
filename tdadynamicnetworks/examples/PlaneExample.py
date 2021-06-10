@@ -68,7 +68,7 @@ def critical_rgg_scaling(n):
     return np.sqrt(np.log(n)/(np.pi*n))
 
 def supercritical_rgg_scaling(n):
-    return 1.25*np.sqrt(np.log(n)/(np.pi*n))  
+    return 5*np.sqrt(np.log(n)/(np.pi*n))  
 
 def supercritical_rgg_scaling_circle(n):
     return 10*np.log(n)/(np.pi*n)  

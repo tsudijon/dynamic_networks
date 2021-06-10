@@ -232,7 +232,7 @@ def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphe
 				print("Elapsed Time Edges: {}".format(time.time()-tic))
 
 		elif manifold == 'torus':
-			threshold = plane.critical_rgg_scaling(N)
+			threshold = plane.supercritical_rgg_scaling(N)
 			node_wt = plane.get_node_wts(t,np.array(coordinates),obsfn)
 			edge_wt = plane.get_edge_wts_rgg_torus(np.array(coordinates), threshold) ## TODO
 

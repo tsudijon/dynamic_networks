@@ -83,10 +83,14 @@ sw_dist_matrix /= np.max(sw_dist_matrix)
 PDs2 = ripser(sw_dist_matrix, distance_matrix=True, maxdim=1, coeff=2)['dgms']
 PDs3 = ripser(sw_dist_matrix, distance_matrix=True, maxdim=1, coeff=3)['dgms']
 dgm1 = PDs3[1]
-score = 0
+max_pers_score = 0
+pers_ratio = 0
 if dgm1.size > 0:
-    score = np.max(dgm1[:, 1] - dgm1[:, 0])
-print(score)
+    max_pers_score = np.max(dgm1[:, 1] - dgm1[:, 0])
+if dgm1.size > 1:
+    second_max_pers = 
+    pers_ratio = second_max_pers / max_pers_score
+print(max_pers_score, pers_ratio)
 
 plt.figure(figsize=(10, 5))
 plt.subplot(121)
