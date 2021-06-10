@@ -18,7 +18,7 @@ from ripser import ripser
 from persim import plot_diagrams
 import time
 
-manifold = 'plane'
+manifold = 'torus'
 seed = 25
 
 ## Setup Sensor Lifetimes 
@@ -30,12 +30,12 @@ obsfn = lambda t, p: plane.periodic_plane_random_cos_series(t,p,1, seed) # T doe
 # can add some random time varying rotation, 
 # or on torus can add some noise.
 
-lambda1 = 25
+lambda1 = 100
 lambda2 = lambda1
 
 start = time.time()
 #sensor_lifetimes = ctsm.get_fixed_sensors(250, max_lifetime, manifold = 'plane')
-sensor_lifetimes = ctsm.get_sensor_lifetimes(1500, max_lifetime, lambda1, lambda2,
+sensor_lifetimes = ctsm.get_sensor_lifetimes(1000, max_lifetime, lambda1, lambda2,
 											domain_lengths = (1,1), manifold = 'plane', seed = seed)
 
 end = time.time()

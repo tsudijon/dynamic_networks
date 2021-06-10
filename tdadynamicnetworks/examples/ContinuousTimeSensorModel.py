@@ -222,19 +222,13 @@ def sample_dynamic_geometric_graph(intervals, obs_times, obsfn, manifold = 'sphe
 
 		elif manifold == 'plane':
 			threshold = plane.supercritical_rgg_scaling(N)
-			tic = time.time()
 			node_wt = plane.get_node_wts(t,np.array(coordinates),obsfn)
-			if verbose:
-				print("Elapsed Time Nodes: {}".format(time.time()-tic))
-			tic = time.time()
 			edge = plane.get_edges_rgg(np.array(coordinates), threshold)
-			if verbose:
-				print("Elapsed Time Edges: {}".format(time.time()-tic))
 
 		elif manifold == 'torus':
 			threshold = plane.supercritical_rgg_scaling(N)
 			node_wt = plane.get_node_wts(t,np.array(coordinates),obsfn)
-			edge_wt = plane.get_edge_wts_rgg_torus(np.array(coordinates), threshold) ## TODO
+			edge = plane.get_edges_rgg_torus(np.array(coordinates), threshold)
 
 		elif manifold == 'circle':
 			threshold = plane.supercritical_rgg_scaling_circle(N)

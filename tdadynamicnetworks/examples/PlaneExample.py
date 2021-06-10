@@ -68,7 +68,11 @@ def critical_rgg_scaling(n):
     return np.sqrt(np.log(n)/(np.pi*n))
 
 def supercritical_rgg_scaling(n):
+<<<<<<< HEAD
     return 5*np.sqrt(np.log(n)/(np.pi*n))  
+=======
+    return 2.5*np.sqrt(np.log(n)/(np.pi*n))  
+>>>>>>> 8fa2234b1651ddb12dbff1ae8aa548ff7d6322db
 
 def supercritical_rgg_scaling_circle(n):
     return 10*np.log(n)/(np.pi*n)  
@@ -149,8 +153,8 @@ def periodic_plane_random_cos_series(t,cds,T, seed = 17):
     np.random.seed(seed)
     x,y = convert_cds(cds)
     vals = np.zeros_like(x)
-    for i in np.arange(5,10):
-        for j in np.arange(5,10):
+    for i in np.arange(20):
+        for j in np.arange(20):
             r = np.random.rand(3)
             vals += np.cos(2*np.pi*(t+r[0])/T)*np.cos((i*x + j*y) + r[1])*r[2]
             #print('$\cos(2\pi(t + {:.2f})/T)\cdot \cos({}x + {}y + {:.2f}) \cdot {:.2f}$'.format(r[0],i,j,r[1],r[2]))
@@ -188,10 +192,11 @@ def plot_field(grid, field):
 
     plt.show()
 
-def get_edge_wts_rgg_torus(points, threshold):
+def get_edges_rgg_torus(points, threshold):
     """
-    map edges to their birthtimes, for the random geometric graph model
-    use this to create a dynamic network, edges are these distances.
+    Figure out which edges are involved in the random geometric graph
+    on a torus, assuming the torus is represented by [0, 1] x [0, 1]
+    
     Params:
     -------
     points: list or array
@@ -200,28 +205,32 @@ def get_edge_wts_rgg_torus(points, threshold):
         radius of connectivity
     Returns
     -------
-    edges: scipy.sparse(N, N)
-        A sparse matrix with the edge weights
+    edges: ndarray(N, 2)
+        Indices into points of the edges that exist in the graph
 
     """
-    ### It might be nice to have a vectorized version of this function.
-    from scipy.spatial.distance import pdist, squareform
-    def smaller_xy(p,q):
-        xdiff = abs(p[0] - q[0])
-        if xdiff > 0.5:
-            xdiff = 1.0 - xdiff
-
-        ydiff = abs(p[1] - q[1])
-        if ydiff > 0.5:
-            ydiff = 1.0 - ydiff
-
-        return xdiff**2 + ydiff**2
-    ds = squareform(pdist(points, smaller_xy))
-
-    # convert to birthtimes
-    ds = np.where(ds < threshold**2, -np.inf, np.inf)
-
-    return sparse.coo_matrix(ds)
+    from scipy import spatial
+    v = np.array(points)
+    tree = spatial.KDTree(v)
+    I = np.array([])
+    J = np.array([])
+    for di in [-1, 0, 1]:
+        for dj in [-1, 0, 1]:
+            neighbs = tree.query_ball_point(v + np.array([[di, dj]]), threshold)
+            N = np.sum([len(js) for js in neighbs])
+            # Pre-allocate index lists for speed
+            Ik = np.zeros(N)
+            Jk = np.zeros(N)
+            i = 0
+            for k, js in enumerate(neighbs):
+                Ik[i:i+len(js)] = k
+                Jk[i:i+len(js)] = js
+                i += len(js)
+            I = np.concatenate((I, Ik))
+            J = np.concatenate((J, Jk))
+    E = sparse.coo_matrix((np.ones(len(I)), (I, J)), shape=(len(points), len(points)))
+    edges = np.array([E.row, E.col], dtype=int).T
+    return edges
 
 def get_edge_wts_rgg_circle(points, threshold): 
     """
